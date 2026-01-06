@@ -1,0 +1,31 @@
+.guest-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #eef2f3;
+}
+
+.guest-card {
+  background: #fff;
+  padding: 40px;
+  width: 350px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.guest-logout {
+  margin-top: 20px;
+  padding: 12px;
+  width: 100%;
+  border-radius: 8px;
+  border: none;
+  background: #d9534f;
+  color: white;
+  cursor: pointer;
+}
+
+.guest-logout:hover {
+  background: #c9302c;
+}
