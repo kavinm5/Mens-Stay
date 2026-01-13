@@ -2,22 +2,13 @@ from flask import Blueprint, request, jsonify
 import psycopg2
 import os
 from dotenv import load_dotenv
-from extensions import bcrypt   # ✅ CORRECT
+from extensions import bcrypt
+from db import get_db_connection
 
 load_dotenv()
 
 owner_bp = Blueprint("owner_bp", __name__)
 
-
-# ✅ DB connection helper (MISSING BEFORE)
-def get_db_connection():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=5432
-    )
 
 # ---------------- CREATE GUEST + ASSIGN BED ----------------
 @owner_bp.route("/create-guest-with-bed", methods=["POST"])

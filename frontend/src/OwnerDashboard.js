@@ -28,10 +28,15 @@ function OwnerDashboard() {
   /* ===== DASHBOARD SUMMARY ===== */
   const [totalBeds, setTotalBeds] = useState(0);
   const [occupiedBeds, setOccupiedBeds] = useState(0);
-  const [emptyBeds, setEmptyBeds] = useState(0);  
+  const [emptyBeds, setEmptyBeds] = useState(0);
 
   const [showAvailability, setShowAvailability] = useState(false);
+  const [showOccupied, setShowOccupied] = useState(false);
+
   const [availabilityData, setAvailabilityData] = useState([]);
+  const [occupiedData, setOccupiedData] = useState([]);
+
+  const [selectedFilterBuilding, setSelectedFilterBuilding] = useState("");
 
 
   /* ACTIVE BEDS */
@@ -81,13 +86,13 @@ function OwnerDashboard() {
   };
 
   const addBuilding = async () => {
-  await fetch("http://127.0.0.1:5000/buildings", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: newBuilding })
-  });
-  setNewBuilding("");
-  loadBuildings();
+    await fetch("http://127.0.0.1:5000/buildings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newBuilding })
+    });
+    setNewBuilding("");
+    loadBuildings();
   };
 
   const addFloor = async () => {
@@ -158,40 +163,75 @@ function OwnerDashboard() {
     setEmptyBeds(total - occupied);
   };
 
-  const calculateAvailability = async () => {
-  const result = [];
+  const calculateOccupied = async () => {
+    const result = [];
 
-  for (const building of buildings) {
-    const floorsRes = await fetch(`http://127.0.0.1:5000/floors/${building.id}`);
-    const floorsData = await floorsRes.json();
+    for (const building of buildings) {
+      const floorsRes = await fetch(`http://127.0.0.1:5000/floors/${building.id}`);
+      const floorsData = await floorsRes.json();
 
-    for (const floor of floorsData) {
-      const roomsRes = await fetch(`http://127.0.0.1:5000/rooms/${floor.id}`);
-      const roomsData = await roomsRes.json();
+      for (const floor of floorsData) {
+        const roomsRes = await fetch(`http://127.0.0.1:5000/rooms/${floor.id}`);
+        const roomsData = await roomsRes.json();
 
-      for (const room of roomsData) {
-        const bedsRes = await fetch(
-          `http://127.0.0.1:5000/room-members/${room.id}`
-        );
-        const bedsData = await bedsRes.json();
+        for (const room of roomsData) {
+          const bedsRes = await fetch(
+            `http://127.0.0.1:5000/room-members/${room.id}`
+          );
+          const bedsData = await bedsRes.json();
 
-        const total = bedsData.length;
-        const occupied = bedsData.filter(b => b.is_occupied).length;
-        const empty = total - occupied;
+          const occupied = bedsData.filter(b => b.is_occupied);
 
-        result.push({
-          building: building.name,
-          room: room.room_code,
-          total,
-          occupied,
-          empty
-        });
+          if (occupied.length > 0) {
+            result.push({
+              building: building.name,
+              room: room.room_code,
+              occupied: occupied.length,
+              members: occupied
+            });
+          }
+        }
       }
     }
-  }
 
-  setAvailabilityData(result);
-};
+    setOccupiedData(result);
+  };
+
+
+  const calculateAvailability = async () => {
+    const result = [];
+
+    for (const building of buildings) {
+      const floorsRes = await fetch(`http://127.0.0.1:5000/floors/${building.id}`);
+      const floorsData = await floorsRes.json();
+
+      for (const floor of floorsData) {
+        const roomsRes = await fetch(`http://127.0.0.1:5000/rooms/${floor.id}`);
+        const roomsData = await roomsRes.json();
+
+        for (const room of roomsData) {
+          const bedsRes = await fetch(
+            `http://127.0.0.1:5000/room-members/${room.id}`
+          );
+          const bedsData = await bedsRes.json();
+
+          const total = bedsData.length;
+          const occupied = bedsData.filter(b => b.is_occupied).length;
+          const empty = total - occupied;
+
+          result.push({
+            building: building.name,
+            room: room.room_code,
+            total,
+            occupied,
+            empty
+          });
+        }
+      }
+    }
+
+    setAvailabilityData(result);
+  };
 
 
 
@@ -239,23 +279,23 @@ function OwnerDashboard() {
     loadMembers(selectedRoom.id);
     alert("Guest created successfully");
   };
-  
+
 
   const checkoutGuest = async () => {
-  if (!activeBedDetails) return;
+    if (!activeBedDetails) return;
 
-  await fetch("http://127.0.0.1:5000/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      member_id: activeBedDetails.member_id
-    })
-  });
+    await fetch("http://127.0.0.1:5000/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        member_id: activeBedDetails.member_id
+      })
+    });
 
-  setActiveBedDetails(null);
-  loadActiveBeds();
-  alert("Guest checked out successfully");
-};
+    setActiveBedDetails(null);
+    loadActiveBeds();
+    alert("Guest checked out successfully");
+  };
 
 
   const logout = () => {
@@ -302,18 +342,22 @@ function OwnerDashboard() {
 
       {/* ========== MAIN CONTENT ========== */}
       <main className="main-content">
+
+
         {/* ===== DASHBOARD ===== */}
         {activeMenu === "dashboard" && (
           <>
             <h2>Active Overview</h2>
 
             {/* ===== SUMMARY CARDS ===== */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "20px",
-              marginBottom: "30px"
-            }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "20px",
+                marginBottom: "30px",
+              }}
+            >
               <div className="summary-card">
                 <h4>Total Beds</h4>
                 <p>{totalBeds}</p>
@@ -322,6 +366,19 @@ function OwnerDashboard() {
               <div className="summary-card occupied">
                 <h4>Occupied</h4>
                 <p>{occupiedBeds}</p>
+
+                <button
+                  className="availability-btn"
+                  onClick={async () => {
+                    if (!showOccupied) {
+                      await calculateOccupied();
+                    }
+                    setShowOccupied(!showOccupied);
+                    setShowAvailability(false);
+                  }}
+                >
+                  {showOccupied ? "Hide Occupied" : "View Occupied"}
+                </button>
               </div>
 
               <div className="summary-card empty">
@@ -335,19 +392,78 @@ function OwnerDashboard() {
                       await calculateAvailability();
                     }
                     setShowAvailability(!showAvailability);
+                    setShowOccupied(false);
                   }}
                 >
                   {showAvailability ? "Hide Availability" : "View Availability"}
                 </button>
               </div>
             </div>
-            {showAvailability && (
-                <div className="availability-panel">
-                  <h3>Room-wise Bed Availability</h3>
 
-                  {availabilityData.map((a, i) => (
+            {/* ===== BUILDING FILTER ===== */}
+            {(showAvailability || showOccupied) && (
+              <div style={{ marginBottom: 16 }}>
+                <select
+                  value={selectedFilterBuilding}
+                  onChange={(e) => setSelectedFilterBuilding(e.target.value)}
+                >
+                  <option value="">All Buildings</option>
+                  {[...new Set(
+                    (showAvailability ? availabilityData : occupiedData).map(
+                      (d) => d.building
+                    )
+                  )].map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* ===== OCCUPIED PANEL ===== */}
+            {showOccupied && (
+              <div className="availability-panel">
+                <h3>Room-wise Occupied Beds</h3>
+
+                {occupiedData
+                  .filter(
+                    (o) =>
+                      !selectedFilterBuilding ||
+                      o.building === selectedFilterBuilding
+                  )
+                  .map((o, i) => (
                     <div key={i} className="availability-row">
-                      <b>{a.building}</b> — Room {a.room} :
+                      <b>{o.building}</b> — Room {o.room}
+                      <span style={{ marginLeft: 8, color: "#dc2626" }}>
+                        {o.occupied} Occupied
+                      </span>
+
+                      <button
+                        style={{ marginLeft: 12 }}
+                        onClick={() => setActiveMenu("activeBeds")}
+                      >
+                        View Guests
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* ===== AVAILABILITY PANEL ===== */}
+            {showAvailability && (
+              <div className="availability-panel">
+                <h3>Room-wise Bed Availability</h3>
+
+                {availabilityData
+                  .filter(
+                    (a) =>
+                      !selectedFilterBuilding ||
+                      a.building === selectedFilterBuilding
+                  )
+                  .map((a, i) => (
+                    <div key={i} className="availability-row">
+                      <b>{a.building}</b> — Room {a.room}
                       <span
                         style={{
                           marginLeft: 8,
@@ -356,12 +472,22 @@ function OwnerDashboard() {
                       >
                         {a.empty}/{a.total} Available
                       </span>
+
+                      {a.empty > 0 && (
+                        <button
+                          style={{ marginLeft: 12 }}
+                          onClick={() => setActiveMenu("addGuest")}
+                        >
+                          Add Guest
+                        </button>
+                      )}
                     </div>
                   ))}
-                </div>
-              )}
+              </div>
+            )}
           </>
-        )}  
+        )}
+
 
         {/* ===== ADD GUEST (OLD MODEL) ===== */}
         {activeMenu === "addGuest" && (
@@ -484,140 +610,140 @@ function OwnerDashboard() {
 
         {/* PLACEHOLDERS */}
         {activeMenu === "activeBeds" && (
-        <>
-          <h2>Active Beds</h2>
+          <>
+            <h2>Active Beds</h2>
 
-          <div className="bed-grid">
-            {activeBeds.map((b) => (
-              <div
-                key={b.member_id}
-                className="bed occupied"
-                onClick={() => setActiveBedDetails(b)}
-              >
-                {b.bed_code}
-              </div>
-            ))}
-          </div>
-
-          {/* ✅ GUEST DETAILS ONLY HERE */}
-          {activeBedDetails && (
-            <div className="guest-details-card">
-              <h3>Guest Details</h3>
-
-              <p><b>Name:</b> {activeBedDetails.name}</p>
-              <p><b>Email:</b> {activeBedDetails.email}</p>
-              <p><b>Building:</b> {activeBedDetails.building}</p>
-              <p><b>Room:</b> {activeBedDetails.room_code}</p>
-              <p><b>Bed:</b> {activeBedDetails.bed_code}</p>
-              <p><b>Check-in:</b> {activeBedDetails.check_in}</p>
-              <p><b>Days Stayed:</b> {activeBedDetails.days}</p>
-              <p><b>Rent Till Today:</b> ₹{activeBedDetails.amount}</p>
-
-              <button
-                onClick={checkoutGuest}
-              >
-                Checkout Guest
-              </button>
-
-              <button
-                onClick={() => setActiveBedDetails(null)}
-              >
-                Close
-              </button>
+            <div className="bed-grid">
+              {activeBeds.map((b) => (
+                <div
+                  key={b.member_id}
+                  className="bed occupied"
+                  onClick={() => setActiveBedDetails(b)}
+                >
+                  {b.bed_code}
+                </div>
+              ))}
             </div>
-          )}
-        </>
-      )}
+
+            {/* ✅ GUEST DETAILS ONLY HERE */}
+            {activeBedDetails && (
+              <div className="guest-details-card">
+                <h3>Guest Details</h3>
+
+                <p><b>Name:</b> {activeBedDetails.name}</p>
+                <p><b>Email:</b> {activeBedDetails.email}</p>
+                <p><b>Building:</b> {activeBedDetails.building}</p>
+                <p><b>Room:</b> {activeBedDetails.room_code}</p>
+                <p><b>Bed:</b> {activeBedDetails.bed_code}</p>
+                <p><b>Check-in:</b> {activeBedDetails.check_in}</p>
+                <p><b>Days Stayed:</b> {activeBedDetails.days}</p>
+                <p><b>Rent Till Today:</b> ₹{activeBedDetails.amount}</p>
+
+                <button
+                  onClick={checkoutGuest}
+                >
+                  Checkout Guest
+                </button>
+
+                <button
+                  onClick={() => setActiveBedDetails(null)}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
 
         {activeMenu === "property" && (
-        <>
-          <h2>Property Setup</h2>
+          <>
+            <h2>Property Setup</h2>
 
-          {/* ========== ADD BUILDING ========== */}
-          <div className="setup-box">
-            <h3>Add Building</h3>
-            <input
-              placeholder="Building Name"
-              value={newBuilding}
-              onChange={(e) => setNewBuilding(e.target.value)}
-            />
-            <button onClick={addBuilding}>Add Building</button>
-          </div>
+            {/* ========== ADD BUILDING ========== */}
+            <div className="setup-box">
+              <h3>Add Building</h3>
+              <input
+                placeholder="Building Name"
+                value={newBuilding}
+                onChange={(e) => setNewBuilding(e.target.value)}
+              />
+              <button onClick={addBuilding}>Add Building</button>
+            </div>
 
-          {/* ========== ADD FLOOR ========== */}
-          <div className="setup-box">
-            <h3>Add Floor</h3>
+            {/* ========== ADD FLOOR ========== */}
+            <div className="setup-box">
+              <h3>Add Floor</h3>
 
-            <select
-              onChange={(e) => {
-                setSetupBuildingId(e.target.value);
-                loadFloors(e.target.value);
-              }}
-            >
+              <select
+                onChange={(e) => {
+                  setSetupBuildingId(e.target.value);
+                  loadFloors(e.target.value);
+                }}
+              >
 
-              <option>Select Building</option>
-              {buildings.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+                <option>Select Building</option>
+                {buildings.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
 
-            <input
-              placeholder="Floor Name"
-              value={newFloor}
-              onChange={(e) => setNewFloor(e.target.value)}
-            />
+              <input
+                placeholder="Floor Name"
+                value={newFloor}
+                onChange={(e) => setNewFloor(e.target.value)}
+              />
 
-            <button onClick={addFloor}>Add Floor</button>
-          </div>
+              <button onClick={addFloor}>Add Floor</button>
+            </div>
 
-          {/* ========== ADD ROOM ========== */}
-          <div className="setup-box">
-            <h3>Add Room</h3>
+            {/* ========== ADD ROOM ========== */}
+            <div className="setup-box">
+              <h3>Add Room</h3>
 
-            <select
-              onChange={(e) => {
-                setSetupFloorId(e.target.value);
-                loadRooms(e.target.value);
-              }}
-            >
+              <select
+                onChange={(e) => {
+                  setSetupFloorId(e.target.value);
+                  loadRooms(e.target.value);
+                }}
+              >
 
-              <option>Select Floor</option>
-              {floors.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
+                <option>Select Floor</option>
+                {floors.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
 
-            <input
-              placeholder="Room Code (ex: S1)"
-              value={newRoom}
-              onChange={(e) => setNewRoom(e.target.value)}
-            />
+              <input
+                placeholder="Room Code (ex: S1)"
+                value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+              />
 
-            <button onClick={addRoom}>Add Room</button>
-          </div>
+              <button onClick={addRoom}>Add Room</button>
+            </div>
 
-          {/* ========== ADD BED ========== */}
-          <div className="setup-box">
-            <h3>Add Bed</h3>
+            {/* ========== ADD BED ========== */}
+            <div className="setup-box">
+              <h3>Add Bed</h3>
 
-            <select onChange={(e) => setSetupRoomId(e.target.value)}>
-              <option>Select Room</option>
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>{r.room_code}</option>
-              ))}
-            </select>
+              <select onChange={(e) => setSetupRoomId(e.target.value)}>
+                <option>Select Room</option>
+                {rooms.map((r) => (
+                  <option key={r.id} value={r.id}>{r.room_code}</option>
+                ))}
+              </select>
 
-            <input
-              placeholder="Bed Code (ex: S1-B1)"
-              value={newBed}
-              onChange={(e) => setNewBed(e.target.value)}
-            />
+              <input
+                placeholder="Bed Code (ex: S1-B1)"
+                value={newBed}
+                onChange={(e) => setNewBed(e.target.value)}
+              />
 
-            <button onClick={addBed}>Add Bed</button>
-          </div>
-        </>
-      )}
+              <button onClick={addBed}>Add Bed</button>
+            </div>
+          </>
+        )}
 
 
 
