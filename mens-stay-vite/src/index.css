@@ -1,0 +1,92 @@
+/* ================= RESET & BASE ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* ================= BODY ================= */
+body {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #f4f6f8;
+  color: #111827;
+}
+
+/* ================= LINKS ================= */
+a {
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #1d4ed8;
+}
+
+/* ================= BUTTONS ================= */
+button {
+  border-radius: 8px;
+  border: none;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #1d4ed8;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* ================= INPUTS ================= */
+input,
+select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* ================= HEADINGS ================= */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ================= SCROLLBAR (OPTIONAL) ================= */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
